@@ -18,6 +18,4 @@ module load PyTorch/2.2.2-rocm-5.6.1-python-3.10-vllm-0.4.0.post1-singularity-20
 
 export LC_ALL=en_us.UTF-8
 
-cd baselines
-
-srun singularity exec $SIF snakemake --cores 1 download_flores_plus
+srun singularity exec $SIF bash run_download.sh

@@ -6,7 +6,7 @@ from pathlib import Path
 from datasets import load_dataset
 
 def download_flores_plus():
-    output_dir = Path(snakemake.params.data_dir)
+    output_dir = Path("data/flores_plus")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     print("Downloading FLORES+ dataset...")
@@ -40,7 +40,7 @@ def download_flores_plus():
             print(f"Warning: {split_name} split not found in dataset")
 
 def download_flores_plus_by_language(language_code):
-    output_dir = Path(snakemake.params.data_dir)
+    output_dir = Path("data/flores_plus")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"Downloading FLORES+ dataset for language: {language_code}")
