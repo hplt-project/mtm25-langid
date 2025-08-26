@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --account=project_465001925
 #SBATCH --job-name=download_flores
-#SBATCH --output=download_flores_%j.out
-#SBATCH --error=download_flores_%j.err
+#SBATCH --output=logs/download_flores_%j.out
+#SBATCH --error=logs/download_flores_%j.err
 #SBATCH --time=01:00:00
 #SBATCH --partition=small
 #SBATCH --nodes=1
