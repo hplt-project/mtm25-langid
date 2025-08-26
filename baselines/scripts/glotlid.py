@@ -45,10 +45,9 @@ def evaluate_model(split):
         if pred_lang == true_lang:
             correct += 1
 
-        results.append({
-            "id": example["id"],
-            "pred_glotlid": pred_lang
-        })
+        result = example.copy()
+        result["pred_glotlid"] = pred_lang
+        results.append(result)
 
     accuracy = correct / total
     print(f"Accuracy: {correct}/{total} = {accuracy:.3f} ({accuracy*100:.1f}%)", file=sys.stderr)
