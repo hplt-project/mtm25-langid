@@ -40,7 +40,7 @@ def evaluate_model(split):
 
         pred = model.predict(example["text"])[0][0]
         pred_lang = pred.replace("__label__", "")
-        true_lang = example["language"]
+        true_lang = f"{example['language']}_{example['script']}"
 
         if pred_lang == true_lang:
             correct += 1
