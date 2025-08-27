@@ -15,7 +15,7 @@ export HF_HOME=/scratch/project_465001925/jhelcl/hf_cache
 
 module --quiet purge
 module load LUMI
-module load PyTorch/2.2.2-rocm-5.6.1-python-3.10-vllm-0.4.0.post1-singularity-20240617
+module load PyTorch/2.6.0-rocm-6.2.4-python-3.12-singularity-20250404
 
 export LC_ALL=en_us.UTF-8
 
