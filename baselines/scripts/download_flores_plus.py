@@ -1,45 +1,24 @@
 #!/usr/bin/env python3
 
-import os
-import json
+import jsonlines
 from pathlib import Path
 from datasets import load_dataset
 
 
-def download_flores_plus():
+def download_flores_plus(split):
     output_dir = Path("data/flores_plus")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    print("Downloading FLORES+ dataset...")
-    dataset = load_dataset("openlanguagedata/flores_plus")
+    dataset = load_dataset("openlanguagedata/flores_plus", split=split)
 
-    for split_name in ["dev", "devtest"]:
-        if split_name in dataset:
-            split_data = dataset[split_name]
-            print(f"Processing {split_name} split with {len(split_data)} examples...")
+    output_file = output_dir / f"{split}.jsonl"
+    with jsonlines.open(output_file, mode='w') as writer:
+        for example in dataset:
+            writer.write(example)
 
-            processed_data = []
-            for example in split_data:
-                processed_data.append({
-                    "text": example["text"],
-                    "language": example["iso_639_3"],
-                    "script": example["iso_15924"],
-                    "glottocode": example["glottocode"],
-                    "id": example["id"],
-                    "domain": example["domain"],
-                    "topic": example["topic"],
-                    "url": example["url"]
-                })
-
-            output_file = output_dir / f"{split_name}.jsonl"
-            with open(output_file, 'w', encoding='utf-8') as f:
-                for item in processed_data:
-                    f.write(json.dumps(item, ensure_ascii=False) + "\n")
-
-            print(f"Saved {len(processed_data)} examples to {output_file}")
-        else:
-            print(f"Warning: {split_name} split not found in dataset")
+    print(f"Saved {len(dataset)} examples to {output_file}")
 
 
 if __name__ == "__main__":
-    download_flores_plus()
+    download_flores_plus("dev")
+    download_flores_plus("devtest")
