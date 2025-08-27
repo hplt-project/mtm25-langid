@@ -20,9 +20,9 @@ export LC_ALL=en_us.UTF-8
 
 mkdir -p results
 
-python3 scripts/evaluate.py results/flores_plus_dev_glotlid_predictions.jsonl --model glotlid > results/flores_plus_dev_glotlid_evaluation.json
-python3 scripts/evaluate.py results/flores_plus_devtest_glotlid_predictions.jsonl --model glotlid > results/flores_plus_devtest_glotlid_evaluation.json
-python3 scripts/evaluate.py results/udhr_glotlid_predictions.jsonl --model glotlid > results/udhr_glotlid_evaluation.json
-python3 scripts/evaluate.py results/flores_plus_dev_openlid_predictions.jsonl --model openlid > results/flores_plus_dev_openlid_evaluation.json
-python3 scripts/evaluate.py results/flores_plus_devtest_openlid_predictions.jsonl --model openlid > results/flores_plus_devtest_openlid_evaluation.json
-python3 scripts/evaluate.py results/udhr_openlid_predictions.jsonl --model openlid > results/udhr_openlid_evaluation.json
+python3 scripts/evaluate.py --model glotlid --dataset flores results/flores_plus_dev_glotlid_predictions.jsonl > results/flores_plus_dev_glotlid_evaluation.json
+python3 scripts/evaluate.py --model glotlid --dataset flores results/flores_plus_devtest_glotlid_predictions.jsonl > results/flores_plus_devtest_glotlid_evaluation.json
+python3 scripts/evaluate.py --model glotlid --dataset udhr results/udhr_glotlid_predictions.jsonl > results/udhr_glotlid_evaluation.json
+python3 scripts/evaluate.py --model openlid --dataset flores results/flores_plus_dev_openlid_predictions.jsonl > results/flores_plus_dev_openlid_evaluation.json
+python3 scripts/evaluate.py --model openlid --dataset flores results/flores_plus_devtest_openlid_predictions.jsonl > results/flores_plus_devtest_openlid_evaluation.json
+python3 scripts/evaluate.py --model openlid --dataset udhr results/udhr_openlid_predictions.jsonl > results/udhr_openlid_evaluation.json

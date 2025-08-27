@@ -39,7 +39,7 @@ def calculate_metrics(y_true, y_pred, unique_labels):
     return per_language_metrics, macro_f1
 
 
-def evaluate_predictions(input_file, model):
+def evaluate_predictions(input_file, model, dataset_type):
     data = []
 
     with open(input_file, "r", encoding="utf-8") as f:
@@ -55,15 +55,12 @@ def evaluate_predictions(input_file, model):
     lang_counts = defaultdict(int)
 
     for example in data:
-        # Handle both FLORES+ and UDHR data formats
-        if 'language' in example and 'script' in example:
+        if dataset_type == "flores":
             true_lang = f"{example['language']}_{example['script']}"
-        elif 'iso639-3' in example and 'iso15924' in example:
-            # UDHR format: language and script are separate fields
-            true_lang = f"{example['iso639-3']}_{example['iso15924']}"
+        elif dataset_type == "udhr":
+            true_lang = example['id']
         else:
-            print(f"Warning: Unknown data format for example {example.get('id', 'unknown')}", file=sys.stderr)
-            continue
+            raise ValueError(f"Unknown dataset type: {dataset_type}")
 
         pred_lang = example['predictions'][model]
 
@@ -97,6 +94,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate language identification predictions")
     parser.add_argument("input_file", help="Input JSONL file with predictions")
     parser.add_argument("--model", default="glotlid", help="Model name to evaluate (default: glotlid)")
+    parser.add_argument("--dataset", choices=["flores", "udhr"], required=True, help="Dataset type (flores or udhr)")
 
     args = parser.parse_args()
-    evaluate_predictions(args.input_file, args.model)
+    evaluate_predictions(args.input_file, args.model, args.dataset)
