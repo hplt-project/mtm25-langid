@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --account=project_465001925
-#SBATCH --job-name=glotlid
-#SBATCH --output=logs/glotlid_%j.out
-#SBATCH --error=logs/glotlid_%j.err
+#SBATCH --job-name=openlid
+#SBATCH --output=logs/openlid_%j.out
+#SBATCH --error=logs/openlid_%j.err
 #SBATCH --time=02:00:00
 #SBATCH --partition=small
 #SBATCH --nodes=1
@@ -18,4 +18,4 @@ module load PyTorch/2.2.2-rocm-5.6.1-python-3.10-vllm-0.4.0.post1-singularity-20
 
 export LC_ALL=en_us.UTF-8
 
-srun singularity exec $SIF bash scripts/run_fasttext_based.sh glotlid
+srun singularity exec $SIF bash scripts/run_fasttext_based.sh openlid
