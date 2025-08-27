@@ -55,7 +55,16 @@ def evaluate_predictions(input_file, model):
     lang_counts = defaultdict(int)
 
     for example in data:
-        true_lang = f"{example['language']}_{example['script']}"
+        # Handle both FLORES+ and UDHR data formats
+        if 'language' in example and 'script' in example:
+            true_lang = f"{example['language']}_{example['script']}"
+        elif 'iso639-3' in example and 'iso15924' in example:
+            # UDHR format: language and script are separate fields
+            true_lang = f"{example['iso639-3']}_{example['iso15924']}"
+        else:
+            print(f"Warning: Unknown data format for example {example.get('id', 'unknown')}", file=sys.stderr)
+            continue
+
         pred_lang = example['predictions'][model]
 
         if pred_lang == true_lang:

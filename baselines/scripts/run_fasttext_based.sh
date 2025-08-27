@@ -23,9 +23,12 @@ fi
 mkdir -p results
 
 echo "Running $MODEL on dev"
-python3 scripts/${MODEL}.py dev > results/flores_plus_dev_${MODEL}_predictions.jsonl
+python3 scripts/fasttext_predictions.py --dataset flores --model $MODEL --split dev > results/flores_plus_dev_${MODEL}_predictions.jsonl
 
 echo "Running $MODEL on devtest"
-python3 scripts/${MODEL}.py devtest > results/flores_plus_devtest_${MODEL}_predictions.jsonl
+python3 scripts/fasttext_predictions.py --dataset flores --model $MODEL --split devtest > results/flores_plus_devtest_${MODEL}_predictions.jsonl
+
+echo "Running $MODEL on udhr"
+python3 scripts/fasttext_predictions.py --dataset udhr --model $MODEL > results/udhr_${MODEL}_predictions.jsonl
 
 echo "Completed running $MODEL on both splits"
