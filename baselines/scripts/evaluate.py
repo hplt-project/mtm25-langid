@@ -39,7 +39,7 @@ def calculate_metrics(y_true, y_pred, unique_labels):
     return per_language_metrics, macro_f1
 
 
-def evaluate_predictions(input_file):
+def evaluate_predictions(input_file, model):
     data = []
 
     with open(input_file, "r", encoding="utf-8") as f:
@@ -56,7 +56,7 @@ def evaluate_predictions(input_file):
 
     for example in data:
         true_lang = f"{example['language']}_{example['script']}"
-        pred_lang = example['predictions']['glotlid']
+        pred_lang = example['predictions'][model]
 
         if pred_lang == true_lang:
             correct += 1
@@ -87,6 +87,7 @@ def evaluate_predictions(input_file):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate language identification predictions")
     parser.add_argument("input_file", help="Input JSONL file with predictions")
+    parser.add_argument("--model", default="glotlid", help="Model name to evaluate (default: glotlid)")
 
     args = parser.parse_args()
-    evaluate_predictions(args.input_file)
+    evaluate_predictions(args.input_file, args.model)
