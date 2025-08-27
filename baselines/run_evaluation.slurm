@@ -1,0 +1,28 @@
+#!/bin/bash
+#SBATCH --account=project_465001925
+#SBATCH --job-name=evaluate_all
+#SBATCH --output=logs/evaluate_all_%j.out
+#SBATCH --error=logs/evaluate_all_%j.err
+#SBATCH --time=01:00:00
+#SBATCH --partition=small
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=8G
+
+export EBU_USER_PREFIX=/projappl/project_465001925/software
+
+module --quiet purge
+module load LUMI
+module load PyTorch/2.2.2-rocm-5.6.1-python-3.10-vllm-0.4.0.post1-singularity-20240617
+
+export LC_ALL=en_us.UTF-8
+
+mkdir -p results
+
+python3 scripts/evaluate.py results/flores_plus_dev_glotlid_predictions.jsonl --model glotlid > results/flores_plus_dev_glotlid_evaluation.json
+python3 scripts/evaluate.py results/flores_plus_devtest_glotlid_predictions.jsonl --model glotlid > results/flores_plus_devtest_glotlid_evaluation.json
+python3 scripts/evaluate.py results/udhr_glotlid_predictions.jsonl --model glotlid > results/udhr_glotlid_evaluation.json
+python3 scripts/evaluate.py results/flores_plus_dev_openlid_predictions.jsonl --model openlid > results/flores_plus_dev_openlid_evaluation.json
+python3 scripts/evaluate.py results/flores_plus_devtest_openlid_predictions.jsonl --model openlid > results/flores_plus_devtest_openlid_evaluation.json
+python3 scripts/evaluate.py results/udhr_openlid_predictions.jsonl --model openlid > results/udhr_openlid_evaluation.json
