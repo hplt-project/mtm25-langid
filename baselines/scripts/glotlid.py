@@ -20,7 +20,7 @@ def load_data(split):
     return data
 
 
-def evaluate_model(split):
+def predict_languages(split):
     print("Downloading GlotLID model from Hugging Face...", file=sys.stderr)
     model_path = hf_hub_download(repo_id="cis-lmu/glotlid", filename="model.bin")
 
@@ -29,40 +29,32 @@ def evaluate_model(split):
 
     data = load_data(split)
 
-    print(f"Evaluating {len(data)} examples...", file=sys.stderr)
-    correct = 0
-    total = len(data)
+    print(f"Processing {len(data)} examples...", file=sys.stderr)
     results = []
 
     for i, example in enumerate(data):
-        if i % 1000 == 0:
-            print(f"Processed {i}/{total} examples...", file=sys.stderr)
+        if i % 10000 == 0:
+            print(f"Processed {i}/{len(data)} examples...", file=sys.stderr)
 
         pred = model.predict(example["text"])[0][0]
         pred_lang = pred.replace("__label__", "")
-        true_lang = f"{example['language']}_{example['script']}"
-
-        if pred_lang == true_lang:
-            correct += 1
 
         result = example.copy()
-        result["pred_glotlid"] = pred_lang
+        if "predictions" not in result:
+            result["predictions"] = {}
+        result["predictions"]["glotlid"] = pred_lang
         results.append(result)
 
-    accuracy = correct / total
-    print(f"Accuracy: {correct}/{total} = {accuracy:.3f} ({accuracy*100:.1f}%)", file=sys.stderr)
+    print(f"Completed processing {len(results)} examples", file=sys.stderr)
 
     with jsonlines.Writer(sys.stdout) as writer:
         for result in results:
             writer.write(result)
 
-    return accuracy
-
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Evaluate GlotLID on flores-plus dataset")
-    parser.add_argument("split", choices=["dev", "devtest"], help="Data split to evaluate")
+    parser = argparse.ArgumentParser(description="Run GlotLID predictions on flores-plus dataset")
+    parser.add_argument("split", choices=["dev", "devtest"], help="Data split to process")
 
     args = parser.parse_args()
-
-    evaluate_model(args.split)
+    predict_languages(args.split)
