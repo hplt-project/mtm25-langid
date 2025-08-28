@@ -33,7 +33,6 @@ def load_udhr_data():
 
 
 def get_model_info(model_name):
-    """Get model repository and filename information"""
     models = {
         "glotlid": ("cis-lmu/glotlid", "model.bin"),
         "openlid": ("laurievb/OpenLID", "model.bin")
@@ -46,7 +45,6 @@ def get_model_info(model_name):
 
 
 def predict_languages(dataset, model_name, split=None):
-    # Get model information
     repo_id, filename = get_model_info(model_name)
 
     print(f"Downloading {model_name} model from Hugging Face...", file=sys.stderr)
@@ -55,7 +53,6 @@ def predict_languages(dataset, model_name, split=None):
     print(f"Loading model from {model_path}...", file=sys.stderr)
     model = fasttext.load_model(model_path)
 
-    # Load data based on dataset
     if dataset == "flores":
         if split is None:
             raise ValueError("Split must be specified for FLORES+ dataset")
@@ -72,7 +69,12 @@ def predict_languages(dataset, model_name, split=None):
         if i % 10000 == 0:
             print(f"Processed {i}/{len(data)} examples...", file=sys.stderr)
 
-        pred = model.predict(example["text"])[0][0]
+        if dataset == "flores":
+            text_content = example["text"]
+        elif dataset == "udhr":
+            text_content = example["sentence"]
+
+        pred = model.predict(text_content)[0][0]
         pred_lang = pred.replace("__label__", "")
 
         result = example.copy()
@@ -99,7 +101,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # Validate split requirement for FLORES+
     if args.dataset == "flores" and args.split is None:
         parser.error("--split is required when --dataset is flores")
 

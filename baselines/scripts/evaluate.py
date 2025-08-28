@@ -93,7 +93,7 @@ def evaluate_predictions(input_file, model, dataset_type):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate language identification predictions")
     parser.add_argument("input_file", help="Input JSONL file with predictions")
-    parser.add_argument("--model", default="glotlid", help="Model name to evaluate (default: glotlid)")
+    parser.add_argument("--model", choices=["glotlid", "openlid", "glot500"], default="glotlid", help="Model name to evaluate (default: glotlid)")
     parser.add_argument("--dataset", choices=["flores", "udhr"], required=True, help="Dataset type (flores or udhr)")
 
     args = parser.parse_args()
