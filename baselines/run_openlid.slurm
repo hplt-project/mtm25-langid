@@ -8,4 +8,4 @@
 #SBATCH --mem=16G
 
 source env/bin/activate
-python3 scripts/run_fasttext_based.py openlid
+./scripts/run_fasttext_based.sh openlid
