@@ -7,4 +7,4 @@
 #SBATCH --mem=16G
 
 source env/bin/activate
-time python3 scripts/run_fasttext_based.sh glotlid
+time ./scripts/run_fasttext_based.sh glotlid
