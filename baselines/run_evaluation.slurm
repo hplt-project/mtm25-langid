@@ -26,3 +26,8 @@ python3 scripts/evaluate.py --model glotlid --dataset udhr results/udhr_glotlid_
 python3 scripts/evaluate.py --model openlid --dataset flores results/flores_plus_dev_openlid_predictions.jsonl > results/flores_plus_dev_openlid_evaluation.json
 python3 scripts/evaluate.py --model openlid --dataset flores results/flores_plus_devtest_openlid_predictions.jsonl > results/flores_plus_devtest_openlid_evaluation.json
 python3 scripts/evaluate.py --model openlid --dataset udhr results/udhr_openlid_predictions.jsonl > results/udhr_openlid_evaluation.json
+
+# Glot500 evaluations
+#python3 scripts/evaluate.py --model glot500 --dataset flores results/flores_plus_dev_glot500_predictions.jsonl > results/flores_plus_dev_glot500_evaluation.json
+#python3 scripts/evaluate.py --model glot500 --dataset flores results/flores_plus_devtest_glot500_predictions.jsonl > results/flores_plus_devtest_glot500_evaluation.json
+#python3 scripts/evaluate.py --model glot500 --dataset udhr results/udhr_glot500_predictions.jsonl > results/udhr_glot500_evaluation.json
