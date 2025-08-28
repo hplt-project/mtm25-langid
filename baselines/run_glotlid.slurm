@@ -1,20 +1,10 @@
 #!/bin/bash
-#SBATCH --account=project_465001925
 #SBATCH --job-name=glotlid
 #SBATCH --output=logs/glotlid_%j.out
 #SBATCH --time=02:00:00
-#SBATCH --partition=small
-#SBATCH --nodes=1
-#SBATCH --ntasks=1
+#SBATCH --partition=cpu-troja,cpu-ms
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
 
-export EBU_USER_PREFIX=/projappl/project_465001925/software
-
-module --quiet purge
-module load LUMI
-module load PyTorch/2.6.0-rocm-6.2.4-python-3.12-singularity-20250404
-
-export LC_ALL=en_us.UTF-8
-
-srun singularity exec $SIF bash scripts/run_fasttext_based.sh glotlid
+source env/bin/activate
+time scripts/run_fasttext_based.sh glotlid
