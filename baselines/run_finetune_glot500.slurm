@@ -2,7 +2,6 @@
 #SBATCH --account=project_465001925
 #SBATCH --job-name=finetune_glot500
 #SBATCH --output=logs/finetune_glot500_%j.out
-#SBATCH --error=logs/finetune_glot500_%j.err
 #SBATCH --time=24:00:00
 #SBATCH --partition=small-g
 #SBATCH --nodes=1

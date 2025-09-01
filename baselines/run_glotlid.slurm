@@ -2,7 +2,6 @@
 #SBATCH --account=project_465001925
 #SBATCH --job-name=glotlid
 #SBATCH --output=logs/glotlid_%j.out
-#SBATCH --error=logs/glotlid_%j.err
 #SBATCH --time=02:00:00
 #SBATCH --partition=small
 #SBATCH --nodes=1

@@ -2,7 +2,6 @@
 #SBATCH --account=project_465001925
 #SBATCH --job-name=evaluate_all
 #SBATCH --output=logs/evaluate_all_%j.out
-#SBATCH --error=logs/evaluate_all_%j.err
 #SBATCH --time=01:00:00
 #SBATCH --partition=small
 #SBATCH --nodes=1
