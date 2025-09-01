@@ -6,7 +6,7 @@ from datasets import load_dataset
 
 
 def download_openlid():
-    output_dir = Path("data/openlid")
+    output_dir = Path("data/OpenLID-v2")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     dataset = load_dataset("laurievb/OpenLID-v2", split="train")
