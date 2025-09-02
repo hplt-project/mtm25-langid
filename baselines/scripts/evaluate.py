@@ -56,7 +56,7 @@ def evaluate_predictions(input_file, model, dataset_type):
 
     for example in data:
         if dataset_type == "flores":
-            true_lang = f"{example['language']}_{example['script']}"
+            true_lang = f"{example['iso_639_3']}_{example['iso_15924']}"
         elif dataset_type == "udhr":
             true_lang = example['id']
         else:
