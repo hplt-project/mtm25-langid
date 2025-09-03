@@ -35,7 +35,8 @@ def load_udhr_data():
 def get_model_info(model_name):
     models = {
         "glotlid": ("cis-lmu/glotlid", "model.bin"),
-        "openlid": ("laurievb/OpenLID", "model.bin")
+        "openlid": ("laurievb/OpenLID", "model.bin"),
+        "openlid-v2": ("laurievb/OpenLID-v2", "model.bin")
     }
 
     if model_name not in models:
@@ -94,8 +95,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run fastText-based language identification predictions")
     parser.add_argument("--dataset", choices=["flores", "udhr"], required=True,
                        help="Dataset to process (flores or udhr)")
-    parser.add_argument("--model", choices=["glotlid", "openlid"], required=True,
-                       help="Model to use (glotlid or openlid)")
+    parser.add_argument("--model", choices=["glotlid", "openlid", "openlid-v2"], required=True,
+                       help="Model to use (glotlid or openlid or openlid-v2)")
     parser.add_argument("--split", choices=["dev", "devtest"],
                        help="Data split to process (required for FLORES+ dataset)")
 
