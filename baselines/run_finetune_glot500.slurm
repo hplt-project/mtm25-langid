@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --account=project_465001925
+#SBATCH --account=project_465001890
 #SBATCH --job-name=finetune_glot500
 #SBATCH --output=logs/finetune_glot500_%j.out
 #SBATCH --time=24:00:00
@@ -20,11 +20,12 @@ export LC_ALL=en_us.UTF-8
 
 mkdir -p models/glot500_finetuned
 
-torchrun --nproc_per_node=4 --master_port=29500 scripts/finetune_glot500.py \
-    --train_data data/openlid/train.jsonl \
+python3 scripts/finetune_glot500.py \
+    --train_data data/OpenLID-v2/train.jsonl \
     --eval_data baselines/data/flores_plus/dev.jsonl \
+    --languages-file data/OpenLID-v2/languages.txt \
     --output_dir models/glot500_finetuned \
-    --num_epochs 3 \
-    --batch_size 16
+    --num_epochs 1 \
+    --batch_size 32
 
 echo "Fine-tuning completed! Model saved to models/glot500_finetuned/"
