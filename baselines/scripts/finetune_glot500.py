@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
 
+import os
 import torch
-from torch.utils.data import Dataset as TorchDataset
+import random
 from datasets import Dataset
-from transformers import (
-    AutoTokenizer,
-    AutoModelForSequenceClassification,
-    TrainingArguments,
-    Trainer,
-    DataCollatorWithPadding,
-)
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, TrainingArguments, Trainer, DataCollatorWithPadding, TrainerCallback
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 import flash_attn
 
@@ -20,76 +15,63 @@ def load_language_list(languages_file_path):
     return language_labels
 
 
-class OpenLIDDataset(TorchDataset):
-    def __init__(self, data_path, tokenizer, language_labels):
-        self.tokenizer = tokenizer
-        self.language_labels = language_labels
-        self.label2id = {label: idx for idx, label in enumerate(language_labels)}
-        self.label2id["unknown"] = len(self.label2id)
+def preprocess_openlid(examples, tokenizer, language_labels):
+    """Preprocess OpenLID dataset examples."""
+    # Create label mapping
+    label2id = {label: idx for idx, label in enumerate(language_labels)}
+    label2id["unknown"] = len(label2id)
 
-        self.hf_dataset = Dataset.from_json(data_path)
+    # Tokenize texts
+    tokenized = tokenizer(
+        examples['text'],
+        truncation=True,
+        padding=False,  # We'll use DataCollatorWithPadding
+        return_tensors=None  # Return lists, not tensors
+    )
 
-    def __len__(self):
-        return len(self.hf_dataset)
-
-    def __getitem__(self, idx):
-        item = self.hf_dataset[idx]
-
-        encodings = self.tokenizer(
-            item['text'],
-            truncation=True,
-            padding=True,
-            return_tensors='pt'
-        )
-
-        language = item.get('language')
-        if language not in self.label2id:
-            label = self.label2id["unknown"]
+    # Map labels
+    labels = []
+    for language in examples['language']:
+        if language in label2id:
+            labels.append(label2id[language])
         else:
-            label = self.label2id[language]
+            labels.append(label2id["unknown"])
 
-        return {
-            'input_ids': encodings['input_ids'].squeeze(0),
-            'attention_mask': encodings['attention_mask'].squeeze(0),
-            'labels': torch.tensor(label, dtype=torch.long)
-        }
+    return {
+        'input_ids': tokenized['input_ids'],
+        'attention_mask': tokenized['attention_mask'],
+        'labels': labels
+    }
 
 
-class FloresDataset(TorchDataset):
-    def __init__(self, data_path, tokenizer, label2id):
-        self.tokenizer = tokenizer
-        self.label2id = label2id
-        self.hf_dataset = Dataset.from_json(data_path)
+def preprocess_flores(examples, tokenizer, label2id):
+    """Preprocess Flores dataset examples."""
+    # Tokenize texts
+    tokenized = tokenizer(
+        examples['text'],
+        truncation=True,
+        padding=False,  # We'll use DataCollatorWithPadding
+        return_tensors=None  # Return lists, not tensors
+    )
 
-    def __len__(self):
-        return len(self.hf_dataset)
+    # Create language codes and map labels
+    language_codes = [f"{iso_639_3}_{iso_15924}" for iso_639_3, iso_15924 in zip(examples['iso_639_3'], examples['iso_15924'])]
 
-    def __getitem__(self, idx):
-        item = self.hf_dataset[idx]
-
-        encodings = self.tokenizer(
-            item['text'],
-            truncation=True,
-            padding=True,
-            return_tensors='pt'
-        )
-
-        language = f"{item['iso_639_3']}_{item['iso_15924']}"
-
-        if language not in self.label2id:
-            label = self.label2id["unknown"]
+    labels = []
+    for language_code in language_codes:
+        if language_code in label2id:
+            labels.append(label2id[language_code])
         else:
-            label = self.label2id[language]
+            labels.append(label2id["unknown"])
 
-        return {
-            'input_ids': encodings['input_ids'].squeeze(0),
-            'attention_mask': encodings['attention_mask'].squeeze(0),
-            'labels': torch.tensor(label, dtype=torch.long)
-        }
+    return {
+        'input_ids': tokenized['input_ids'],
+        'attention_mask': tokenized['attention_mask'],
+        'labels': labels
+    }
 
 
 def compute_metrics(pred):
-    """Compute evaluation metrics."""
     labels = pred.label_ids
     preds = pred.predictions.argmax(-1)
 
@@ -99,23 +81,90 @@ def compute_metrics(pred):
     return {'accuracy': acc, 'f1': f1, 'precision': precision, 'recall': recall}
 
 
-def finetune_glot500(train_data_path, eval_data_path, output_dir, languages_file_path, num_epochs=3, batch_size=8, freeze_base=False):
+def create_compute_metrics_with_tasting(eval_dataset, tokenizer, language_labels,num_samples=5, seed=42):
+    random.seed(seed)
+    total_samples = len(eval_dataset)
+    selected_indices = random.sample(range(total_samples), min(num_samples, total_samples))
+    selected_indices.sort()
+
+    def compute_metrics_with_tasting(pred):
+        labels = pred.label_ids
+        preds = pred.predictions.argmax(-1)
+
+        print("\n" + "="*50)
+        print("Tasting evaluation dataset with current model predictions:")
+        print("="*50)
+        taste_dataset(eval_dataset, tokenizer, language_labels, preds, selected_indices)
+        print("="*50 + "\n")
+
+        return compute_metrics(pred)
+
+    return compute_metrics_with_tasting
+
+
+def taste_dataset(dataset, tokenizer, language_labels, predictions=None, sample_indices=None):
+    if sample_indices is None:
+        sample_indices = list(range(min(5, len(dataset))))
+
+    for idx, i in enumerate(sample_indices):
+        print(f"Sample {idx+1} (index {i}):")
+
+        tokens = tokenizer.convert_ids_to_tokens(dataset[i]['input_ids'])
+        text = tokenizer.decode(dataset[i]['input_ids'], skip_special_tokens=True)
+
+        print(f"  text: {text}")
+        print(f"  tokens: {tokens[:40]}...")
+
+        if dataset[i]['labels'] < len(language_labels):
+            print(f"  label: {language_labels[dataset[i]['labels']]}")
+        else:
+            print(f"  label: unknown")
+
+        if predictions is not None:
+            if predictions[i] < len(language_labels):
+                print(f"  prediction: {language_labels[predictions[i]]}")
+            else:
+                print(f"  prediction: unknown")
+
+        print()
+
+
+def finetune_glot500(train_data_path, eval_data_path, output_dir, languages_file_path, num_epochs=3, batch_size=8, freeze_base=False, max_samples=None):
     tokenizer = AutoTokenizer.from_pretrained("cis-lmu/glot500-base")
 
     language_labels = load_language_list(languages_file_path)
-    train_dataset = OpenLIDDataset(train_data_path, tokenizer, language_labels)
 
-    label2id = train_dataset.label2id
+    train_dataset = Dataset.from_json(train_data_path).shuffle()
 
-    eval_dataset = FloresDataset(eval_data_path, tokenizer, label2id)
+    # Use only a subset of the data if specified
+    if max_samples is not None and max_samples < len(train_dataset):
+        train_dataset = train_dataset.select(range(max_samples))
+        print(f"Using {max_samples} samples from training data (out of {len(train_dataset)})")
+
+    train_dataset = train_dataset.map(
+        lambda examples: preprocess_openlid(examples, tokenizer, language_labels),
+        batched=True,
+        remove_columns=train_dataset.column_names
+    )
+    print("Training dataset:")
+    taste_dataset(train_dataset, tokenizer, language_labels)
+
+    label2id = {label: idx for idx, label in enumerate(language_labels)}
+    label2id["unknown"] = len(label2id)
+
+    eval_dataset = Dataset.from_json(eval_data_path)
+    eval_dataset = eval_dataset.map(
+        lambda examples: preprocess_flores(examples, tokenizer, label2id),
+        batched=True,
+        remove_columns=eval_dataset.column_names
+    )
+    print("Evaluation dataset:")
+    taste_dataset(eval_dataset, tokenizer, language_labels)
 
     model = AutoModelForSequenceClassification.from_pretrained(
-        #"cis-lmu/glot500-base",
-        f"{output_dir}/checkpoint-400",
+        "cis-lmu/glot500-base",
         num_labels=len(label2id),
-        device_map="auto",
-        torch_dtype=torch.bfloat16,
-        attn_implementation="sdpa"
+        device_map="auto"
     )
 
     if freeze_base:
@@ -128,32 +177,25 @@ def finetune_glot500(train_data_path, eval_data_path, output_dir, languages_file
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
         eval_strategy="steps",
-        eval_steps=200,
+        eval_steps=2000,
         logging_dir=f"{output_dir}/logs",
-        logging_steps=10,
+        logging_steps=100,
         save_strategy="steps",
-        save_steps=200,
+        save_steps=2000,
         save_total_limit=10,
-        bf16=True,
         load_best_model_at_end=True,
         metric_for_best_model="f1",
-        optim="adamw_torch",
-        learning_rate=5e-5,
-        weight_decay=0.1,
-        gradient_accumulation_steps=1,
-        dataloader_pin_memory=False,
-        remove_unused_columns=False,
+        learning_rate=2e-5,
+        weight_decay=0.01
     )
-
-    data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
     trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
-        data_collator=data_collator,
-        compute_metrics=compute_metrics,
+        data_collator=DataCollatorWithPadding(tokenizer=tokenizer),
+        compute_metrics=create_compute_metrics_with_tasting(eval_dataset, tokenizer, language_labels, num_samples=5)
     )
 
     trainer.train()
@@ -175,9 +217,11 @@ if __name__ == "__main__":
     parser.add_argument("--num-epochs", type=int, default=3, help="Number of training epochs")
     parser.add_argument("--batch-size", type=int, default=8, help="Training batch size per GPU")
     parser.add_argument("--freeze-base", action="store_true", help="Freeze the base model parameters")
+    parser.add_argument("--max-samples", type=int, default=None, help="Maximum number of samples from training data (default: use all)")
 
     args = parser.parse_args()
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
     finetune_glot500(train_data_path=args.train_data, eval_data_path=args.eval_data, output_dir=args.output_dir,
                      languages_file_path=args.languages_file, num_epochs=args.num_epochs, batch_size=args.batch_size,
-                     freeze_base=args.freeze_base)
+                     freeze_base=args.freeze_base, max_samples=args.max_samples)
