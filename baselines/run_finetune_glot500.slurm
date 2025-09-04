@@ -21,11 +21,12 @@ export LC_ALL=en_us.UTF-8
 mkdir -p models/glot500_finetuned
 
 python3 scripts/finetune_glot500.py \
-    --train_data data/OpenLID-v2/train.jsonl \
-    --eval_data baselines/data/flores_plus/dev.jsonl \
+    --train-data data/OpenLID-v2/train.jsonl \
+    --eval-data data/flores_plus/dev.jsonl \
     --languages-file data/OpenLID-v2/languages.txt \
-    --output_dir models/glot500_finetuned \
-    --num_epochs 1 \
-    --batch_size 32
+    --output-dir models/glot500_finetuned \
+    --num-epochs 1 \
+    --batch-size 32 \
+    --max-samples 5000000
 
 echo "Fine-tuning completed! Model saved to models/glot500_finetuned/"
