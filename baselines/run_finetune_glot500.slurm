@@ -26,7 +26,6 @@ python3 scripts/finetune_glot500.py \
     --languages-file data/OpenLID-v2/languages.txt \
     --output-dir models/glot500_finetuned \
     --num-epochs 1 \
-    --batch-size 32 \
-    --max-samples 5000000
+    --batch-size 32
 
 echo "Fine-tuning completed! Model saved to models/glot500_finetuned/"
