@@ -1,0 +1,3 @@
+[submodule "baselines/models/ConLID"]
+	path = baselines/models/ConLID
+	url = https://github.com/epfl-nlp/ConLID.git
