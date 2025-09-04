@@ -134,7 +134,20 @@ def finetune_glot500(train_data_path, eval_data_path, output_dir, languages_file
 
     language_labels = load_language_list(languages_file_path)
 
-    train_dataset = Dataset.from_json(train_data_path).shuffle()
+    train_dataset = Dataset.from_json(train_data_path)
+
+    print("Filtering out rows with null text or language...")
+    def is_valid_row(example, idx):
+        if example['text'] is None:
+            print(f"Filtering out line {idx}: text is None")
+            return False
+        if example['language'] is None:
+            print(f"Filtering out line {idx}: language is None")
+            return False
+        return True
+
+    train_dataset = train_dataset.filter(is_valid_row, with_indices=True)
+    train_dataset = train_dataset.shuffle()
 
     # Use only a subset of the data if specified
     if max_samples is not None and max_samples < len(train_dataset):
