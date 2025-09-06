@@ -8,4 +8,4 @@
 #SBATCH --mem=32G
 
 source env/bin/activate
-time ./scripts/run_glot500.sh models/glot500_finetuned_20M/checkpoint-210000
+time ./scripts/run_glot500.sh models/glot500_finetuned_20M data/openlid/languages.txt
