@@ -10,17 +10,16 @@ import torch
 from eval_datasets import load_flores_data, load_udhr_data
 
 
-def predict_languages(dataset, model_name, model_dir, split=None):
+def predict_languages(dataset, model_name, model_dir, languages_file, split=None):
     print(f"Loading {model_name} model from {model_dir}...", file=sys.stderr)
-    
+
     tokenizer = AutoTokenizer.from_pretrained(model_dir)
     model = AutoModelForSequenceClassification.from_pretrained(model_dir)
-    
-    # Load label mapping from unique labels file
-    labels_file = "glot500_unique_labels.txt"
-    with open(labels_file, 'r') as f:
+
+    with open(languages_file, 'r') as f:
         language_labels = [line.strip() for line in f if line.strip()]
-    
+    language_labels.append("unknown")
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
     model.eval()
@@ -85,6 +84,8 @@ if __name__ == "__main__":
                        help="Model name for output")
     parser.add_argument("--model-dir", required=True,
                        help="Path to the finetuned model directory")
+    parser.add_argument("--languages-file", required=True,
+                       help="Path to the language labels file used during training")
     parser.add_argument("--split", choices=["dev", "devtest"],
                        help="Data split to process (required for FLORES+ dataset)")
 
@@ -93,4 +94,4 @@ if __name__ == "__main__":
     if args.dataset == "flores" and args.split is None:
         parser.error("--split is required when --dataset is flores")
 
-    predict_languages(args.dataset, args.model, args.model_dir, args.split)
+    predict_languages(args.dataset, args.model, args.model_dir, args.languages_file, args.split)
