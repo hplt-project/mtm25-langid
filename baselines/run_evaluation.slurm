@@ -30,3 +30,7 @@ python3 scripts/evaluate.py --model openlid --dataset udhr results/udhr_openlid_
 python3 scripts/evaluate.py --model glot500_finetuned_20M --dataset flores --languages-file data/openlid/languages.txt results/flores_plus_dev_glot500_finetuned_20M_predictions.jsonl > results/flores_plus_dev_glot500_finetuned_20M_evaluation.json
 python3 scripts/evaluate.py --model glot500_finetuned_20M --dataset flores --languages-file data/openlid/languages.txt results/flores_plus_devtest_glot500_finetuned_20M_predictions.jsonl > results/flores_plus_devtest_glot500_finetuned_20M_evaluation.json
 python3 scripts/evaluate.py --model glot500_finetuned_20M --dataset udhr --languages-file data/openlid/languages.txt results/udhr_glot500_finetuned_20M_predictions.jsonl > results/udhr_glot500_finetuned_20M_evaluation.json
+
+python3 scripts/evaluate.py --model conlid --dataset flores --languages-file data/openlid/languages.txt results/flores_plus_dev_conlid_predictions.jsonl > results/flores_plus_dev_conlid_evaluation.json
+python3 scripts/evaluate.py --model conlid --dataset flores --languages-file data/openlid/languages.txt results/flores_plus_devtest_conlid_predictions.jsonl > results/flores_plus_devtest_conlid_evaluation.json
+python3 scripts/evaluate.py --model conlid --dataset udhr --languages-file data/openlid/languages.txt results/udhr_conlid_predictions.jsonl > results/udhr_conlid_evaluation.json
