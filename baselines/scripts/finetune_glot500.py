@@ -45,16 +45,12 @@ def preprocess_openlid(examples, tokenizer, language_labels):
 
 
 def preprocess_flores(examples, tokenizer, label2id):
-    """Preprocess Flores dataset examples."""
-    # Tokenize texts
     tokenized = tokenizer(
         examples['text'],
         truncation=True,
-        padding=False,  # We'll use DataCollatorWithPadding
-        return_tensors=None  # Return lists, not tensors
+        padding=False,
+        return_tensors=None
     )
-
-    # Create language codes and map labels
     language_codes = [f"{iso_639_3}_{iso_15924}" for iso_639_3, iso_15924 in zip(examples['iso_639_3'], examples['iso_15924'])]
 
     labels = []
@@ -134,31 +130,11 @@ def finetune_glot500(train_data_path, eval_data_path, output_dir, languages_file
 
     language_labels = load_language_list(languages_file_path)
 
-    train_dataset = Dataset.from_json(train_data_path)
-
-    print("Filtering out rows with null text or language...")
-    def is_valid_row(example, idx):
-        if example['text'] is None:
-            print(f"Filtering out line {idx}: text is None")
-            return False
-        if example['language'] is None:
-            print(f"Filtering out line {idx}: language is None")
-            return False
-        return True
-
-    train_dataset = train_dataset.filter(is_valid_row, with_indices=True)
-    train_dataset = train_dataset.shuffle()
-
-    # Use only a subset of the data if specified
+    print(f"Loading preprocessed training data from {train_path}...")
+    train_dataset = Dataset.load_from_disk(train_path)
     if max_samples is not None and max_samples < len(train_dataset):
         train_dataset = train_dataset.select(range(max_samples))
-        print(f"Using {max_samples} samples from training data (out of {len(train_dataset)})")
-
-    train_dataset = train_dataset.map(
-        lambda examples: preprocess_openlid(examples, tokenizer, language_labels),
-        batched=True,
-        remove_columns=train_dataset.column_names
-    )
+        print(f"Using {max_samples} samples from preprocessed training data")
     print("Training dataset:")
     taste_dataset(train_dataset, tokenizer, language_labels)
 
@@ -223,7 +199,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Fine-tune Glot500 for language identification")
-    parser.add_argument("--train-data", required=True, help="Path to training data JSONL file")
+    parser.add_argument("--train-path", required=True, help="Path to preprocessed training data directory")
     parser.add_argument("--eval-data", required=True, help="Path to evaluation data JSONL file")
     parser.add_argument("--output-dir", required=True, help="Output directory for fine-tuned model")
     parser.add_argument("--languages-file", required=True, help="Path to languages.txt file")
@@ -235,6 +211,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-    finetune_glot500(train_data_path=args.train_data, eval_data_path=args.eval_data, output_dir=args.output_dir,
+    finetune_glot500(train_path=args.train_path, eval_data_path=args.eval_data, output_dir=args.output_dir,
                      languages_file_path=args.languages_file, num_epochs=args.num_epochs, batch_size=args.batch_size,
                      freeze_base=args.freeze_base, max_samples=args.max_samples)
