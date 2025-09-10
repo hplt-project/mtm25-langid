@@ -4,44 +4,16 @@ import os
 import torch
 import random
 from datasets import Dataset
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, TrainingArguments, Trainer, DataCollatorWithPadding, TrainerCallback
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, TrainingArguments, Trainer, DataCollatorWithPadding
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 import flash_attn
+from gradual_unfreezing import GradualUnfreezingCallback
 
 
 def load_language_list(languages_file_path):
     with open(languages_file_path, 'r') as f:
         language_labels = [line.strip() for line in f if line.strip()]
     return language_labels
-
-
-def preprocess_openlid(examples, tokenizer, language_labels):
-    """Preprocess OpenLID dataset examples."""
-    # Create label mapping
-    label2id = {label: idx for idx, label in enumerate(language_labels)}
-    label2id["unknown"] = len(label2id)
-
-    # Tokenize texts
-    tokenized = tokenizer(
-        examples['text'],
-        truncation=True,
-        padding=False,  # We'll use DataCollatorWithPadding
-        return_tensors=None  # Return lists, not tensors
-    )
-
-    # Map labels
-    labels = []
-    for language in examples['language']:
-        if language in label2id:
-            labels.append(label2id[language])
-        else:
-            labels.append(label2id["unknown"])
-
-    return {
-        'input_ids': tokenized['input_ids'],
-        'attention_mask': tokenized['attention_mask'],
-        'labels': labels
-    }
 
 
 def preprocess_flores(examples, tokenizer, label2id):
@@ -125,7 +97,7 @@ def taste_dataset(dataset, tokenizer, language_labels, predictions=None, sample_
         print()
 
 
-def finetune_glot500(train_data_path, eval_data_path, output_dir, languages_file_path, num_epochs=3, batch_size=8, freeze_base=False, max_samples=None):
+def finetune_glot500(train_path, eval_data_path, output_dir, languages_file_path, num_epochs=3, batch_size=32, max_samples=None, gradual_unfreezing=False):
     tokenizer = AutoTokenizer.from_pretrained("cis-lmu/glot500-base")
 
     language_labels = load_language_list(languages_file_path)
@@ -156,9 +128,23 @@ def finetune_glot500(train_data_path, eval_data_path, output_dir, languages_file
         device_map="auto"
     )
 
-    if freeze_base:
-        for param in model.base_model.parameters():
-            param.requires_grad = False
+    callbacks = []
+    if gradual_unfreezing:
+        unfreezing_schedule = {  # this is number of examples before dividing into batches
+            0: 0,
+            10_000_000: 2,
+            20_000_000: 4,
+            30_000_000: 8,
+            40_000_000: 12, # glot500 is based on XLM-R base, which has 12 layers
+        }
+
+        print("Gradual unfreezing enabled")
+
+        callbacks.append(
+            GradualUnfreezingCallback(
+            model=model,
+            unfreezing_schedule=unfreezing_schedule,
+        ))
 
     training_args = TrainingArguments(
         output_dir=output_dir,
@@ -184,7 +170,8 @@ def finetune_glot500(train_data_path, eval_data_path, output_dir, languages_file
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
         data_collator=DataCollatorWithPadding(tokenizer=tokenizer),
-        compute_metrics=create_compute_metrics_with_tasting(eval_dataset, tokenizer, language_labels, num_samples=5)
+        compute_metrics=create_compute_metrics_with_tasting(eval_dataset, tokenizer, language_labels, num_samples=5),
+        callbacks=callbacks
     )
 
     trainer.train()
@@ -205,7 +192,7 @@ if __name__ == "__main__":
     parser.add_argument("--languages-file", required=True, help="Path to languages.txt file")
     parser.add_argument("--num-epochs", type=int, default=3, help="Number of training epochs")
     parser.add_argument("--batch-size", type=int, default=8, help="Training batch size per GPU")
-    parser.add_argument("--freeze-base", action="store_true", help="Freeze the base model parameters")
+    parser.add_argument("--gradual-unfreezing", action="store_true", help="Enable gradual unfreezing of transformer layers")
     parser.add_argument("--max-samples", type=int, default=None, help="Maximum number of samples from training data (default: use all)")
 
     args = parser.parse_args()
@@ -213,4 +200,4 @@ if __name__ == "__main__":
 
     finetune_glot500(train_path=args.train_path, eval_data_path=args.eval_data, output_dir=args.output_dir,
                      languages_file_path=args.languages_file, num_epochs=args.num_epochs, batch_size=args.batch_size,
-                     freeze_base=args.freeze_base, max_samples=args.max_samples)
+                     max_samples=args.max_samples, gradual_unfreezing=args.gradual_unfreezing)
