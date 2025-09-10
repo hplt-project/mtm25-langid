@@ -2,33 +2,27 @@
 
 set -e
 
-# Check if model parameter is provided
 if [ $# -eq 0 ]; then
     echo "Usage: $0 <model>"
-    echo "Available models: glotlid, openlid"
-    echo "Example: $0 glotlid"
-    echo "Example: $0 openlid"
+    echo "Available models: glotlid, openlid, openlid-v2"
     exit 1
 fi
 
 MODEL=$1
-
-# Validate model parameter
-if [ "$MODEL" != "glotlid" ] && [ "$MODEL" != "openlid" ]; then
-    echo "Error: Invalid model '$MODEL'"
-    echo "Available models: glotlid, openlid"
-    exit 1
-fi
+LANG200=data/OpenLID-v2/languages.txt
 
 mkdir -p results
 
 echo "Running $MODEL on dev"
 python3 scripts/fasttext_predictions.py --dataset flores --model $MODEL --split dev > results/flores_plus_dev_${MODEL}_predictions.jsonl
+python3 scripts/fasttext_predictions.py --dataset flores --model $MODEL --split dev --languages-file $LANG200 > results/flores_plus_dev_${MODEL}_lang200_predictions.jsonl
 
 echo "Running $MODEL on devtest"
 python3 scripts/fasttext_predictions.py --dataset flores --model $MODEL --split devtest > results/flores_plus_devtest_${MODEL}_predictions.jsonl
+python3 scripts/fasttext_predictions.py --dataset flores --model $MODEL --split devtest --languages-file $LANG200 > results/flores_plus_devtest_${MODEL}_lang200_predictions.jsonl
 
 echo "Running $MODEL on udhr"
 python3 scripts/fasttext_predictions.py --dataset udhr --model $MODEL > results/udhr_${MODEL}_predictions.jsonl
+python3 scripts/fasttext_predictions.py --dataset udhr --model $MODEL --languages-file $LANG200 > results/udhr_${MODEL}_lang200_predictions.jsonl
 
 echo "Completed running $MODEL on both splits"

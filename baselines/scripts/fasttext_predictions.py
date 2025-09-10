@@ -7,6 +7,7 @@ import sys
 import jsonlines
 from huggingface_hub import hf_hub_download
 from eval_datasets import load_flores_data, load_udhr_data
+from glotlid_customlid import CustomLID
 
 
 def get_model_info(model_name):
@@ -22,14 +23,31 @@ def get_model_info(model_name):
     return models[model_name]
 
 
-def predict_languages(dataset, model_name, split=None):
+def load_language_list(languages_file_path):
+    with open(languages_file_path, 'r') as f:
+        language_labels = [line.strip() for line in f if line.strip()]
+    return [f'__label__{label}' for label in language_labels]
+
+
+def predict_languages(dataset, model_name, split=None, languages_file=None, prediction_mode='before'):
     repo_id, filename = get_model_info(model_name)
 
     print(f"Downloading {model_name} model from Hugging Face...", file=sys.stderr)
     model_path = hf_hub_download(repo_id=repo_id, filename=filename)
 
     print(f"Loading model from {model_path}...", file=sys.stderr)
-    model = fasttext.load_model(model_path)
+
+    # Load languages from file if provided
+    languages_list = None
+    if languages_file is not None:
+        print(f"Loading languages from {languages_file}...", file=sys.stderr)
+        languages_list = load_language_list(languages_file)
+        print(f"Loaded {len(languages_list)} languages: {languages_list[:5]}{'...' if len(languages_list) > 5 else ''}", file=sys.stderr)
+
+    if languages_list is not None:
+        model = CustomLID(model_path, languages=languages_list, mode=prediction_mode)
+    else:
+        model = fasttext.load_model(model_path)
 
     if dataset == "flores":
         if split is None:
@@ -52,8 +70,13 @@ def predict_languages(dataset, model_name, split=None):
         elif dataset == "udhr":
             text_content = example["sentence"]
 
-        pred = model.predict(text_content)[0][0]
-        pred_lang = pred.replace("__label__", "")
+        if languages_list is not None:
+            pred_labels, pred_probs = model.predict(text_content, k=1)
+            pred = pred_labels[0]
+            pred_lang = pred.replace("__label__", "")
+        else:
+            pred = model.predict(text_content)[0][0]
+            pred_lang = pred.replace("__label__", "")
 
         result = example.copy()
         if "predictions" not in result:
@@ -76,10 +99,14 @@ if __name__ == "__main__":
                        help="Model to use (glotlid or openlid or openlid-v2)")
     parser.add_argument("--split", choices=["dev", "devtest"],
                        help="Data split to process (required for FLORES+ dataset)")
+    parser.add_argument("--languages-file", type=str,
+                       help="Path to file containing language labels (one per line, e.g., eng_Latn)")
+    parser.add_argument("--prediction-mode", choices=["before", "after"], default="before",
+                       help="Prediction mode for CustomLID: 'before' (limit before softmax) or 'after' (limit after softmax)")
 
     args = parser.parse_args()
 
     if args.dataset == "flores" and args.split is None:
         parser.error("--split is required when --dataset is flores")
 
-    predict_languages(args.dataset, args.model, args.split)
+    predict_languages(args.dataset, args.model, args.split, args.languages_file, args.prediction_mode)
