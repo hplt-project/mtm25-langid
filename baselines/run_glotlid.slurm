@@ -18,4 +18,3 @@ module load PyTorch/2.6.0-rocm-6.2.4-python-3.12-singularity-20250404
 export LC_ALL=en_us.UTF-8
 
 srun singularity exec $SIF bash scripts/run_fasttext_based.sh glotlid
-time ./scripts/run_fasttext_based.sh glotlid
