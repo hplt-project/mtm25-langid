@@ -5,10 +5,16 @@ import fasttext
 import argparse
 import sys
 import jsonlines
+import regex
 from huggingface_hub import hf_hub_download
 from eval_datasets import load_flores_data, load_udhr_data
 from glotlid_customlid import CustomLID
 
+# Regex patterns for text preprocessing
+# defines what we want to remove from string for langID
+NONWORD_REPLACE_STR = r"[^\p{Word}\p{Zs}]|\d"  # either (not a word nor a space) or (is digit)
+NONWORD_REPLACE_PATTERN = regex.compile(NONWORD_REPLACE_STR)
+SPACE_PATTERN = regex.compile(r"\s\s+")  # squeezes sequential whitespace
 
 def get_model_info(model_name):
     models = {
@@ -29,7 +35,15 @@ def load_language_list(languages_file_path):
     return [f'__label__{label}' for label in language_labels]
 
 
-def predict_languages(dataset, model_name, split=None, languages_file=None, prediction_mode='before'):
+def preprocess_text(text):
+    text = text.replace('\n', ' ').strip().lower()
+    text = regex.sub(SPACE_PATTERN, " ", text)
+    text = regex.sub(NONWORD_REPLACE_PATTERN, "", text)
+    return text
+
+
+def predict_languages(dataset, model_name, split=None, languages_file=None, prediction_mode='before', enable_preprocessing=False):
+
     repo_id, filename = get_model_info(model_name)
 
     print(f"Downloading {model_name} model from Hugging Face...", file=sys.stderr)
@@ -70,6 +84,9 @@ def predict_languages(dataset, model_name, split=None, languages_file=None, pred
         elif dataset == "udhr":
             text_content = example["sentence"]
 
+        if enable_preprocessing:
+            text_content = preprocess_text(text_content)
+
         if languages_list is not None:
             pred_labels, pred_probs = model.predict(text_content, k=1)
             pred = pred_labels[0]
@@ -103,10 +120,12 @@ if __name__ == "__main__":
                        help="Path to file containing language labels (one per line, e.g., eng_Latn)")
     parser.add_argument("--prediction-mode", choices=["before", "after"], default="before",
                        help="Prediction mode for CustomLID: 'before' (limit before softmax) or 'after' (limit after softmax)")
+    parser.add_argument("--enable-preprocessing", action="store_true",
+                       help="Enable text preprocessing (lowercase, normalize spaces, remove non-word characters)")
 
     args = parser.parse_args()
 
     if args.dataset == "flores" and args.split is None:
         parser.error("--split is required when --dataset is flores")
 
-    predict_languages(args.dataset, args.model, args.split, args.languages_file, args.prediction_mode)
+    predict_languages(args.dataset, args.model, args.split, args.languages_file, args.prediction_mode, args.enable_preprocessing)
