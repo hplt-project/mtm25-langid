@@ -7,4 +7,4 @@
 #SBATCH --mem=16G
 
 source env/bin/activate
-time scripts/run_fasttext_based.sh openlid
+time scripts/run_fasttext_based.sh openlid-v2
