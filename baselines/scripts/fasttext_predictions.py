@@ -84,6 +84,11 @@ def predict_languages(dataset, model_name, split=None, languages_file=None, pred
         elif dataset == "udhr":
             text_content = example["sentence"]
 
+        if not enable_preprocessing and model_name in ["openlid", "openlid-v2"]:
+            print("!" * 80, file=sys.stderr)
+            print("Warning! Disabled preprocessing for openLID model", file=sys.stderr)
+            print("!" * 80, file=sys.stderr)
+
         if enable_preprocessing:
             text_content = preprocess_text(text_content)
 
