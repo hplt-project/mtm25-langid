@@ -37,8 +37,8 @@ def load_language_list(languages_file_path):
 
 def preprocess_text(text):
     text = text.replace('\n', ' ').strip().lower()
-    text = regex.sub(SPACE_PATTERN, " ", text)
     text = regex.sub(NONWORD_REPLACE_PATTERN, "", text)
+    text = regex.sub(SPACE_PATTERN, " ", text)
     return text
 
 
