@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --account=project_465001890
+#SBATCH --account=project_465002259
 #SBATCH --job-name=finetune_glot500
 #SBATCH --output=logs/finetune_glot500_%j.out
 #SBATCH --time=72:00:00
@@ -10,7 +10,7 @@
 #SBATCH --mem=128G
 #SBATCH --gres=gpu:4
 
-export EBU_USER_PREFIX=/projappl/project_465001925/software
+export EBU_USER_PREFIX=/projappl/project_465002310/software
 
 module --quiet purge
 module load LUMI

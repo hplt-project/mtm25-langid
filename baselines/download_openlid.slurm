@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --account=project_465001925
+#SBATCH --account=project_465002259
 #SBATCH --job-name=download_openlid
 #SBATCH --output=logs/download_openlid_%j.out
 #SBATCH --time=02:00:00
@@ -9,8 +9,8 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
 
-export EBU_USER_PREFIX=/projappl/project_465001925/software
-export HF_HOME=/scratch/project_465001925/jhelcl/hf_cache
+export EBU_USER_PREFIX=/projappl/project_465002310/software
+export HF_HOME=/scratch/project_465002259/jhelcl/hf_cache
 
 module --quiet purge
 module load LUMI

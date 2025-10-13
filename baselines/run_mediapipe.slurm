@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --account=project_465001925
+#SBATCH --account=project_465002259
 #SBATCH --job-name=mediapipe
 #SBATCH --output=logs/mediapipe_%j.out
 #SBATCH --time=02:00:00
@@ -9,7 +9,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
 
-export EBU_USER_PREFIX=/projappl/project_465001925/software
+export EBU_USER_PREFIX=/projappl/project_465002310/software
 
 module --quiet purge
 module load LUMI
