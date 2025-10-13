@@ -20,7 +20,8 @@ def get_model_info(model_name):
     models = {
         "glotlid": ("cis-lmu/glotlid", "model.bin"),
         "openlid": ("laurievb/OpenLID", "model.bin"),
-        "openlid-v2": ("laurievb/OpenLID-v2", "model.bin")
+        "openlid-v2": ("laurievb/OpenLID-v2", "model.bin"),
+        "retrained": (None, None)
     }
 
     if model_name not in models:
@@ -42,12 +43,17 @@ def preprocess_text(text):
     return text
 
 
-def predict_languages(dataset, model_name, split=None, languages_file=None, prediction_mode='before', enable_preprocessing=False):
+def predict_languages(dataset, model_name, split=None, languages_file=None, prediction_mode='before', enable_preprocessing=False, model_path=None):
 
     repo_id, filename = get_model_info(model_name)
 
-    print(f"Downloading {model_name} model from Hugging Face...", file=sys.stderr)
-    model_path = hf_hub_download(repo_id=repo_id, filename=filename)
+    if model_path:
+        print(f"Using provided model path: {model_path}...", file=sys.stderr)
+    elif repo_id and filename:
+        print(f"Downloading {model_name} model from Hugging Face...", file=sys.stderr)
+        model_path = hf_hub_download(repo_id=repo_id, filename=filename)
+    else:
+        raise ValueError(f"No model path provided and no HuggingFace info for model: {model_name}")
 
     print(f"Loading model from {model_path}...", file=sys.stderr)
 
@@ -84,7 +90,7 @@ def predict_languages(dataset, model_name, split=None, languages_file=None, pred
         elif dataset == "udhr":
             text_content = example["sentence"]
 
-        if not enable_preprocessing and model_name in ["openlid", "openlid-v2"]:
+        if not enable_preprocessing and model_name in ["openlid", "openlid-v2", "retrained"]:
             print("!" * 80, file=sys.stderr)
             print("Warning! Disabled preprocessing for openLID model", file=sys.stderr)
             print("!" * 80, file=sys.stderr)
@@ -117,8 +123,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run fastText-based language identification predictions")
     parser.add_argument("--dataset", choices=["flores", "udhr"], required=True,
                        help="Dataset to process (flores or udhr)")
-    parser.add_argument("--model", choices=["glotlid", "openlid", "openlid-v2"], required=True,
-                       help="Model to use (glotlid or openlid or openlid-v2)")
+    parser.add_argument("--model", choices=["glotlid", "openlid", "openlid-v2", "retrained"], required=True,
+                       help="Model to use (glotlid, openlid, openlid-v2, or retrained)")
     parser.add_argument("--split", choices=["dev", "devtest"],
                        help="Data split to process (required for FLORES+ dataset)")
     parser.add_argument("--languages-file", type=str,
@@ -127,10 +133,12 @@ if __name__ == "__main__":
                        help="Prediction mode for CustomLID: 'before' (limit before softmax) or 'after' (limit after softmax)")
     parser.add_argument("--enable-preprocessing", action="store_true",
                        help="Enable text preprocessing (lowercase, normalize spaces, remove non-word characters)")
+    parser.add_argument("--model-path", type=str,
+                       help="Path to local model file (required for retrained model)")
 
     args = parser.parse_args()
 
     if args.dataset == "flores" and args.split is None:
         parser.error("--split is required when --dataset is flores")
 
-    predict_languages(args.dataset, args.model, args.split, args.languages_file, args.prediction_mode, args.enable_preprocessing)
+    predict_languages(args.dataset, args.model, args.split, args.languages_file, args.prediction_mode, args.enable_preprocessing, args.model_path)
