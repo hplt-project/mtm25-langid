@@ -10,7 +10,6 @@
 #SBATCH --mem=16G
 
 export EBU_USER_PREFIX=/projappl/project_465002310/software
-export HF_HOME=/scratch/project_465002259/jhelcl/hf_cache
 
 module --quiet purge
 module load LUMI
