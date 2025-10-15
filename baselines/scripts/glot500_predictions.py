@@ -10,8 +10,8 @@ import torch
 from eval_datasets import load_flores_data, load_udhr_data
 
 
-def predict_languages(dataset, model_name, model_dir, languages_file, split=None):
-    print(f"Loading {model_name} model from {model_dir}...", file=sys.stderr)
+def predict_languages(dataset, model_dir, languages_file, split=None):
+    print(f"Loading model from {model_dir}...", file=sys.stderr)
 
     tokenizer = AutoTokenizer.from_pretrained(model_dir)
     model = AutoModelForSequenceClassification.from_pretrained(model_dir)
@@ -34,7 +34,6 @@ def predict_languages(dataset, model_name, model_dir, languages_file, split=None
         raise ValueError(f"Unknown dataset: {dataset}. Available datasets: flores, udhr")
 
     print(f"Processing {len(data)} examples...", file=sys.stderr)
-    results = []
 
     for i, example in enumerate(data):
         if i % 10000 == 0:
@@ -63,25 +62,15 @@ def predict_languages(dataset, model_name, model_dir, languages_file, split=None
         else:
             pred_lang = "unknown"
 
-        result = example.copy()
-        if "predictions" not in result:
-            result["predictions"] = {}
-        result["predictions"][model_name] = pred_lang
-        results.append(result)
+        print(pred_lang)
 
-    print(f"Completed processing {len(results)} examples", file=sys.stderr)
-
-    with jsonlines.Writer(sys.stdout) as writer:
-        for result in results:
-            writer.write(result)
+    print(f"Done", file=sys.stderr)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run Glot500 finetuned model predictions")
     parser.add_argument("--dataset", choices=["flores", "udhr"], required=True,
                        help="Dataset to process (flores or udhr)")
-    parser.add_argument("--model", required=True,
-                       help="Model name for output")
     parser.add_argument("--model-dir", required=True,
                        help="Path to the finetuned model directory")
     parser.add_argument("--languages-file", required=True,
@@ -94,4 +83,4 @@ if __name__ == "__main__":
     if args.dataset == "flores" and args.split is None:
         parser.error("--split is required when --dataset is flores")
 
-    predict_languages(args.dataset, args.model, args.model_dir, args.languages_file, args.split)
+    predict_languages(args.dataset, args.model_dir, args.languages_file, args.split)
