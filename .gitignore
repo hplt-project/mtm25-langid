@@ -1,7 +1,9 @@
 baselines/data/
-baselines/results/
-logs/
-models/
+baselines/results*
+baselines/logs/
+baselines/models/
+baselines/predictions/
+baselinse/cm/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
