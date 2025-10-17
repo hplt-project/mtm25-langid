@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Confusion Matrices</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { color: #333; }
+
+        /* Table container with fixed height and scroll */
+        .table-container {
+            max-height: calc(100vh - 120px);
+            overflow: auto;
+            border: 1px solid #ddd;
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .confusion-table {
+            border-collapse: collapse;
+            margin: 0;
+            font-size: 12px;
+        }
+
+        .confusion-table th, .confusion-table td {
+            border: 1px solid #ddd !important;
+            padding: 4px !important;
+            text-align: center;
+            white-space: normal !important;
+            word-wrap: break-word !important;
+            min-width: 40px;
+        }
+
+        /* Clickable headers */
+        .confusion-table th.sortable {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .confusion-table th.sortable:hover {
+            background-color: #e0e0e0 !important;
+        }
+
+        /* Sticky first column (language name) */
+        .confusion-table th:first-child,
+        .confusion-table td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 3;
+            background-color: #f2f2f2 !important;
+        }
+
+        /* Sticky second column (Total) */
+        .confusion-table th:nth-child(2),
+        .confusion-table td:nth-child(2) {
+            position: sticky;
+            left: 45px; /* Width of first column */
+            z-index: 3;
+            background-color: #f2f2f2 !important;
+        }
+
+        /* Sticky third column (Recall) */
+        .confusion-table th:nth-child(3),
+        .confusion-table td:nth-child(3) {
+            position: sticky;
+            left: 90px; /* Width of first + second column */
+            z-index: 3;
+            background-color: #f2f2f2 !important;
+        }
+
+        /* Sticky all header rows */
+        .confusion-table thead tr th {
+            position: sticky;
+            background-color: #f2f2f2 !important;
+            z-index: 2;
+        }
+
+        .confusion-table thead tr:nth-child(1) th {
+            top: 0;
+        }
+
+        .confusion-table thead tr:nth-child(2) th {
+            top: 28px; /* Height of first row */
+        }
+
+        .confusion-table thead tr:nth-child(3) th {
+            top: 56px; /* Height of first + second row */
+        }
+
+        /* Higher z-index for sticky column headers */
+        .confusion-table thead tr th:first-child,
+        .confusion-table thead tr th:nth-child(2),
+        .confusion-table thead tr th:nth-child(3) {
+            z-index: 5;
+        }
+
+        .confusion-table th { background-color: #f2f2f2 !important; font-weight: bold; }
+        .confusion-table td.diagonal { background-color: #d4edda !important; }
+        .confusion-table th.diagonal { background-color: #d4edda !important; }
+        .confusion-table td.incorrect { background-color: #f8d7da !important; }
+        .confusion-table th.bad-recall { background-color: #f8d7da !important; }
+        .confusion-table th.bad-fpr { background-color: #f8d7da !important; }
+
+        /* Highlighting for sorted column/row */
+        .confusion-table th.sorted-highlight,
+        .confusion-table td.sorted-highlight {
+            background-color: #c0c0c0 !important;
+        }
+
+        .stats { margin: 5px 0; padding: 5px; background-color: #f8f9fa; border-radius: 3px; font-size: 12px; }
+        .nav-tabs .nav-link { font-size: 14px; }
+        .tab-pane { transition: none !important; }
+        .tab-pane.fade { transition: none !important; }
+        .filter-control { margin: 5px 0; padding: 8px; background-color: #e9ecef; border-radius: 3px; }
+        .hidden-lang { display: none; }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        $("body").on("click", ".reset-btn", function() {
+            location.reload();
+        });
+
+        $("body").on("click", ".sort-total", function() {
+            const modelId = $(this).closest("table").attr("id").replace("table-", "");
+            sortByTotal(modelId);
+        });
+
+        $("body").on("click", ".sort-recall", function() {
+            const modelId = $(this).closest("table").attr("id").replace("table-", "");
+            sortByRecall(modelId);
+        });
+
+        $("body").on("click", ".sort-fpr", function() {
+            const modelId = $(this).closest("table").attr("id").replace("table-", "");
+            sortByFPRMax(modelId);
+        });
+
+        $("body").on("click", ".header-row .lang-col.sortable", function() {
+            const modelId = $(this).closest("table").attr("id").replace("table-", "");
+            const lang = $(this).data("lang");
+            sortByColumn(modelId, lang);
+        });
+
+        $("body").on("click", "tbody th.sortable", function() {
+            const modelId = $(this).closest("table").attr("id").replace("table-", "");
+            const lang = $(this).data("lang");
+            sortByRow(modelId, lang);
+        });
+
+        $("body").on("click", ".apply-filter", function() {
+            const modelId = $(this).data("model");
+            applyFilter(modelId);
+        });
+
+        $("body").on("click", ".reset-filter", function() {
+            const modelId = $(this).data("model");
+            resetFilter(modelId);
+        });
+
+        function clearHighlights(modelId) {
+            $("#table-" + modelId + " .sorted-highlight").removeClass("sorted-highlight");
+        }
+
+        function sortByColumn(modelId, lang) {
+            const $table = $("#table-" + modelId);
+            const $allHeaders = $table.find(".header-row th");
+            let colIndex = -1;
+
+            $allHeaders.each(function(idx) {
+                if ($(this).data("lang") === lang) {
+                    colIndex = idx;
+                    return false;
+                }
+            });
+
+            if (colIndex === -1) return;
+
+            const rows = $table.find("tbody tr").get();
+
+            rows.sort((a, b) => {
+                const aVal = parseInt($(a).children().eq(colIndex).text()) || 0;
+                const bVal = parseInt($(b).children().eq(colIndex).text()) || 0;
+                if (bVal !== aVal) return bVal - aVal;
+                return $(a).data("lang").localeCompare($(b).data("lang"));
+            });
+
+            $.each(rows, (i, row) => $table.find("tbody").append(row));
+            $table.find("thead .sorted-highlight").removeClass("sorted-highlight");
+            $allHeaders.eq(colIndex).addClass("sorted-highlight");
+        }
+
+        function sortByRow(modelId, lang) {
+            const $table = $("#table-" + modelId);
+            const $targetRow = $table.find("tbody tr[data-lang='" + lang + "']");
+            const $langHeaders = $table.find(".header-row th").slice(3);
+
+            const columnData = $langHeaders.map(function(idx) {
+                const colIndex = idx + 3;
+                return {
+                    index: colIndex,
+                    value: parseInt($targetRow.children().eq(colIndex).text()) || 0,
+                    lang: $(this).data("lang")
+                };
+            }).get();
+
+            columnData.sort((a, b) => {
+                if (b.value !== a.value) return b.value - a.value;
+                return (a.lang || "").localeCompare(b.lang || "");
+            });
+
+            const newOrder = columnData.map(d => d.index);
+            $table.find("thead tr, tbody tr").each(function() {
+                const $row = $(this);
+                const fixed = $row.children().slice(0, 3);
+                const langCells = $row.children().slice(3);
+                const reordered = newOrder.map(i => langCells[i - 3]);
+                $row.children().slice(3).remove();
+                $row.append(reordered);
+            });
+
+            $table.find("tbody .sorted-highlight").removeClass("sorted-highlight");
+            $targetRow.children().eq(0).addClass("sorted-highlight");
+        }
+
+        function sortByTotal(modelId) {
+            const $table = $("#table-" + modelId);
+            const rows = $table.find("tbody tr").get();
+
+            rows.sort((a, b) => {
+                const aVal = parseInt($(a).children().eq(1).text()) || 0;
+                const bVal = parseInt($(b).children().eq(1).text()) || 0;
+                if (bVal !== aVal) return bVal - aVal;
+                return $(a).data("lang").localeCompare($(b).data("lang"));
+            });
+
+            $.each(rows, (i, row) => $table.find("tbody").append(row));
+            $table.find("thead .sorted-highlight").removeClass("sorted-highlight");
+            $table.find(".header-row th:nth-child(2)").addClass("sorted-highlight");
+        }
+
+        function sortByRecall(modelId) {
+            const $table = $("#table-" + modelId);
+            const rows = $table.find("tbody tr").get();
+
+            rows.sort((a, b) => {
+                const aVal = parseFloat($(a).children().eq(2).text()) || 0;
+                const bVal = parseFloat($(b).children().eq(2).text()) || 0;
+                if (aVal !== bVal) return aVal - bVal;
+                return $(a).data("lang").localeCompare($(b).data("lang"));
+            });
+
+            $.each(rows, (i, row) => $table.find("tbody").append(row));
+            $table.find("thead .sorted-highlight").removeClass("sorted-highlight");
+            $table.find(".header-row th:nth-child(3)").addClass("sorted-highlight");
+        }
+
+        function sortByFPRMax(modelId) {
+            const $table = $("#table-" + modelId);
+            const $fprRow = $table.find(".fpr-row");
+            const $langHeaders = $table.find(".header-row th").slice(3);
+
+            const columnData = $langHeaders.map(function(idx) {
+                const fprValue = parseFloat($fprRow.children().eq(idx + 3).text()) || 0;
+                return {
+                    index: idx + 3,
+                    value: fprValue,
+                    lang: $(this).data("lang")
+                };
+            }).get();
+
+            columnData.sort((a, b) => {
+                if (b.value !== a.value) return b.value - a.value;
+                return (a.lang || "").localeCompare(b.lang || "");
+            });
+
+            const newOrder = columnData.map(d => d.index);
+            $table.find("thead tr, tbody tr").each(function() {
+                const $row = $(this);
+                const fixed = $row.children().slice(0, 3);
+                const langCells = $row.children().slice(3);
+                const reordered = newOrder.map(i => langCells[i - 3]);
+                $row.children().slice(3).remove();
+                $row.append(reordered);
+            });
+
+            $table.find("tbody .sorted-highlight").removeClass("sorted-highlight");
+            $fprRow.children().eq(0).addClass("sorted-highlight");
+        }
+
+        function applyFilter(modelId) {
+            const threshold = parseInt($("#errorThreshold-" + modelId).val());
+            const $table = $("#table-" + modelId);
+            const hiddenLangs = new Set();
+            let totalHidden = 0;
+
+            $table.find("tbody tr").each(function() {
+                const maxErrors = parseInt($(this).data("max-errors"));
+                const lang = $(this).data("lang");
+
+                if (maxErrors <= threshold) {
+                    hiddenLangs.add(lang);
+                    totalHidden++;
+                    $(this).addClass("hidden-lang");
+                } else {
+                    $(this).removeClass("hidden-lang");
+                }
+            });
+
+            $table.find("thead th[data-lang]").each(function() {
+                const lang = $(this).data("lang");
+                $(this).toggleClass("hidden-lang", hiddenLangs.has(lang));
+            });
+
+            $("#hiddenCount-" + modelId).text("Hidden: " + totalHidden + " / " + $table.find("tbody tr").length + " languages");
+        }
+
+        function resetFilter(modelId) {
+            $("#errorThreshold-" + modelId).val("0");
+            $("#table-" + modelId + " .hidden-lang").removeClass("hidden-lang");
+            $("#hiddenCount-" + modelId).text("");
+        }
+    });
+    </script>
+</head>
+<body>
+
+    <ul class="nav nav-tabs" id="modelTabs" role="tablist">
+        {% for model in models %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if loop.first %}active{% endif %}" id="{{ model }}-tab" data-bs-toggle="tab" data-bs-target="#{{ model }}" type="button" role="tab">{{ model }}</button>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <div class="tab-content" id="modelTabsContent">
+        {% for model, data in models.items() %}
+        <div class="tab-pane {% if loop.first %}active show{% endif %}" id="{{ model }}" role="tabpanel">
+
+            <div class="filter-control">
+                <label for="errorThreshold-{{ model }}">Hide languages with max off-diagonal errors &le; </label>
+                <input type="number" id="errorThreshold-{{ model }}" value="0" min="0" style="width: 80px;">
+                <button class="btn btn-sm btn-primary apply-filter" data-model="{{ model }}">Apply Filter</button>
+                <button class="btn btn-sm btn-secondary reset-filter" data-model="{{ model }}">Reset</button>
+                <span id="hiddenCount-{{ model }}" style="margin-left: 20px;"></span>
+            </div>
+
+            <div class="table-container">
+                <table class="table confusion-table" id="table-{{ model }}">
+                    <thead>
+                        <tr class="header-row">
+                            <th class="reset-btn" style="cursor: pointer;" title="Reset sorting">Reset</th>
+                            <th class="sortable sort-total">Total</th>
+                            <th class="sortable sort-recall">Recall</th>
+                            {% for lang in data.languages %}
+                            <th class="lang-col sortable" data-lang="{{ lang }}">{{ lang }}</th>
+                            {% endfor %}
+                        </tr>
+
+                        <tr class="totals-row">
+                            <th>Total</th>
+                            <th class="diagonal">{{ data.cm_sum }}</th>
+                            <th>-</th>
+                            {% for col_total in data.col_totals %}
+                            <th class="diagonal lang-col">{{ col_total }}</th>
+                            {% endfor %}
+                        </tr>
+
+                        <tr class="fpr-row">
+                            <th class="sortable sort-fpr" style="cursor: pointer;" title="Click to sort by max FPR">FPR</th>
+                            <th>-</th>
+                            <th>-</th>
+                            {% for fpr_data in data.fpr_values %}
+                            <th class="{{ fpr_data.class }} lang-col">{{ "%.3f"|format(fpr_data.value) }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for row_data in data.rows %}
+                        <tr class="lang-row" data-lang="{{ row_data.lang }}" data-max-errors="{{ row_data.max_errors }}">
+                            <th class="lang-col sortable" data-lang="{{ row_data.lang }}" style="cursor: pointer;">{{ row_data.lang }}</th>
+                            <th class="diagonal">{{ row_data.total }}</th>
+                            <th class="{{ row_data.recall_class }}">{{ "%.3f"|format(row_data.recall) }}</th>
+                            {% for cell in row_data.cells %}
+                            <td class="{{ cell.class }}">{{ cell.value }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="stats">
+                <p><strong>Total predictions:</strong> {{ data.cm_sum }} | <strong>Correct predictions:</strong> {{ data.cm_trace }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</body>
+</html>
