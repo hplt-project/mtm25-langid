@@ -23,6 +23,7 @@ def parse_args():
     parser.add_argument("--skip_clean",
                         help="skip step one and start with sort/uniq", action="store_true")
     parser.add_argument("--data_dir", default="../data/", help="directory with *.parquet files by language")
+    parser.add_argument("--skip_sort", action="store_true", help="skip sort and start with sampling")
     return parser.parse_args()
 
 
@@ -56,6 +57,7 @@ def clean_and_write_out(indata, outfile):
             except Exception as e:
                 logging.info(f"Error '{e}' on line (skipped): {line}")
 
+
 # clean specified OpenLID file only
 if args.parquet_to_clean:
     logging.info(f"cleaning {args.parquet_to_clean}")
@@ -65,6 +67,7 @@ if args.parquet_to_clean:
     clean_and_write_out(ds, outfile)
     logging.info(f"wrote stage 1 clean results to {outfile}")
     exit(0)
+
 
 if not args.skip_clean:
     # load dataset (will cache in $HOME/.cache/huggingface
@@ -84,11 +87,13 @@ if not args.skip_clean:
     #         except Exception as e:
     #             logging.info(f"Error '{e}' on line (skipped): {line}")
 
-# sort, uniq, and count lines (with shell for speed)
-logging.info(f"sort and uniq...")
-os.system(f"sort -u -o {stage2_path} --parallel=16 {stage1_path}")
 
-# sample with temperature
+if not args.skip_sort:
+    # sort, uniq (with shell for speed)
+    logging.info(f"sort and uniq...")
+    os.system(f"sort -u -o {stage2_path} --parallel=16 {stage1_path}")
+
+# count lines and sample with temperature
 logging.info("generating counts...")
 os.system(f"cut -f1 -d' ' {stage2_path} | uniq -c > {counts_path}")
 logging.info("generating counts lookup dict...")
