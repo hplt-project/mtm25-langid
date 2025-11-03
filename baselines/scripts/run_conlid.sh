@@ -5,15 +5,13 @@ set -e
 # Add the ConLID submodule to Python path
 export PYTHONPATH="${PYTHONPATH}:$(pwd)/3rd_party/ConLID"
 
-mkdir -p results
+mkdir -p predictions
 
 echo "Running conlid on dev"
-python3 scripts/conlid_predictions.py --dataset flores --model conlid --model-dir models/conlid-model --split dev > results/flores_plus_dev_conlid_predictions.jsonl
+time python3 scripts/conlid_predictions.py --dataset flores --split dev --model-dir models/conlid-model > predictions/conlid.flores_plus_dev.txt
 
 echo "Running conlid on devtest"
-python3 scripts/conlid_predictions.py --dataset flores --model conlid --model-dir models/conlid-model --split devtest > results/flores_plus_devtest_conlid_predictions.jsonl
+time python3 scripts/conlid_predictions.py --dataset flores --split devtest --model-dir models/conlid-model > predictions/conlid.flores_plus_devtest.txt
 
 echo "Running conlid on udhr"
-python3 scripts/conlid_predictions.py --dataset udhr --model conlid --model-dir models/conlid-model > results/udhr_conlid_predictions.jsonl
-
-echo "Completed running conlid on both splits"
+time python3 scripts/conlid_predictions.py --dataset udhr --model-dir models/conlid-model > predictions/conlid.udhr.txt

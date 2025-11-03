@@ -2,15 +2,12 @@
 
 set -e
 
-# Check if model directory parameter is provided
-if [ $# -lt 2 ]; then
-    echo "Usage: $0 <model_dir> <languages_file>"
-    echo "Example: $0 models/glot500_finetuned_20M languages.txt"
+if [ $# -eq 0 ]; then
+    echo "Usage: $0 <model_base_dir>"
     exit 1
 fi
 
 MODEL_BASE_DIR=$1
-LANGUAGES_FILE=$2
 
 # Find the checkpoint with the highest number
 CHECKPOINT_DIR=$(ls -d "$MODEL_BASE_DIR"/checkpoint-* 2>/dev/null | sort -V | tail -n 1)
@@ -24,15 +21,13 @@ echo "Using checkpoint: $CHECKPOINT_DIR"
 
 MODEL=$(basename "$MODEL_BASE_DIR")
 
-mkdir -p results
+mkdir -p predictions
 
 echo "Running $MODEL on dev"
-python3 scripts/glot500_predictions.py --dataset flores --model $MODEL --model-dir "$CHECKPOINT_DIR" --languages-file "$LANGUAGES_FILE" --split dev > results/flores_plus_dev_${MODEL}_predictions.jsonl
+time python3 scripts/glot500_predictions.py --dataset flores --split dev --model-dir "$CHECKPOINT_DIR" > predictions/${MODEL}.flores_plus_dev.txt
 
 echo "Running $MODEL on devtest"
-python3 scripts/glot500_predictions.py --dataset flores --model $MODEL --model-dir "$CHECKPOINT_DIR" --languages-file "$LANGUAGES_FILE" --split devtest > results/flores_plus_devtest_${MODEL}_predictions.jsonl
+time python3 scripts/glot500_predictions.py --dataset flores --split devtest --model-dir "$CHECKPOINT_DIR" > predictions/${MODEL}.flores_plus_devtest.txt
 
 echo "Running $MODEL on udhr"
-python3 scripts/glot500_predictions.py --dataset udhr --model $MODEL --model-dir "$CHECKPOINT_DIR" --languages-file "$LANGUAGES_FILE" > results/udhr_${MODEL}_predictions.jsonl
-
-echo "Completed running $MODEL on all datasets"
+time python3 scripts/glot500_predictions.py --dataset udhr --model-dir "$CHECKPOINT_DIR" > predictions/${MODEL}.udhr.txt

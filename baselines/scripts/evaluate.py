@@ -85,12 +85,16 @@ def evaluate_predictions(input_file, model, dataset_type, languages_file=None):
 
     macro_f1 = sum(per_lang_metrics[lang]["f1"] for lang in per_lang_metrics) / len(per_lang_metrics)
     macro_fpr = sum(per_lang_metrics[lang]["fpr"] for lang in per_lang_metrics) / len(per_lang_metrics)
+    macro_precision = sum(per_lang_metrics[lang]["precision"] for lang in per_lang_metrics) / len(per_lang_metrics)
+    macro_recall = sum(per_lang_metrics[lang]["recall"] for lang in per_lang_metrics) / len(per_lang_metrics)
     num_gold_examples = sum(per_lang_metrics[lang]["tp"] + per_lang_metrics[lang]["fn"] for lang in per_lang_metrics)
 
     results = {
-        "aggregated": {
-            "macro_f1": macro_f1,
-            "macro_fpr": macro_fpr,
+        "macro_averages": {
+            "f1": macro_f1,
+            "fpr": macro_fpr,
+            "precision": macro_precision,
+            "recall": macro_recall,
             "num_examples": num_gold_examples
         },
         "per_language": per_lang_metrics,

@@ -79,7 +79,6 @@ def predict_languages(dataset, model_name, split=None, languages_file=None, pred
         raise ValueError(f"Unknown dataset: {dataset}. Available datasets: flores, udhr")
 
     print(f"Processing {len(data)} examples...", file=sys.stderr)
-    results = []
 
     for i, example in enumerate(data):
         if i % 10000 == 0:
@@ -106,17 +105,9 @@ def predict_languages(dataset, model_name, split=None, languages_file=None, pred
             pred = model.predict(text_content)[0][0]
             pred_lang = pred.replace("__label__", "")
 
-        result = example.copy()
-        if "predictions" not in result:
-            result["predictions"] = {}
-        result["predictions"][model_name] = pred_lang
-        results.append(result)
+        print(pred_lang)
 
-    print(f"Completed processing {len(results)} examples", file=sys.stderr)
-
-    with jsonlines.Writer(sys.stdout) as writer:
-        for result in results:
-            writer.write(result)
+    print(f"Done", file=sys.stderr)
 
 
 if __name__ == "__main__":
