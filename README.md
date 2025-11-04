@@ -17,7 +17,7 @@ If the data are for a new language, just convert to a parquet.
 
 3. The most recent data (added for some languages, ara_Arab and fas_Arab merged, lat_Latn added, srp_Latn added, zxx_Zxxx added) are at `/scratch/project_465002259/eurolid/02-11-data/`.
 
-4. Cleaning, deduplication, up/downsampling, writing to FastText format and shuffling are done by `make_training_openlid.py`. I was able to run that script on my laptop with only 16 GB of memory, except shuffling. If you fail on memory when shuffling, run `shuf.sh` on LUMI (don't forget to change the hardcoded paths there. They should be changed to variables...) 
+4. Cleaning, deduplication, up/downsampling, writing to FastText format and shuffling are done by `make_training_openlid.py`. I was able to run that script on my laptop with only 16 GB of memory, except shuffling. If you fail on memory when shuffling, run `shuf.sh` on LUMI.
 
 When running from scratch, the command is
 
