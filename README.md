@@ -32,7 +32,7 @@ the command to run preprocessing will be:
 python3 make_training_openlid.py <output_dir> --skip_clean --skip_sort
 ```
 
-5. The training on LUMI is run by `lid.sh`. Also beware of the hardcoded paths in the python script! (I hope to fix it today). The hyperparameters are the same as in OpenLID.
+5. The training on LUMI is run by `lid.sh`. Don't forget to pass a new path to data/saved model instead of the default one. The hyperparameters are the same as in OpenLID.
 
 ## Adding GlotLID data
 
