@@ -10,7 +10,7 @@ That folder contains mostly OpenLID author's scripts with minor changes.
 
 For the baseline family-specific language models, I recommend to run from step 4, skipping cleaning (so that their sampling is not influenced by some minor languages and we don't loose the data). The current cleaning is language-independent, so you can just take `/scratch/project_465002259/eurolid/02-11/openlid_stage2_prep.fasttext` and take only the languages of interest from there.
 
-1. Find additional data and format by the scheme <text>\t<language>\t<source>. If it is an addition to an existing language, it can be appended to it either from a *.parquet or *.tsv using the script `append_to_openlid_parquet.py`.
+1. Find additional data and format by the scheme `<text>\t<language>\t<source>`. If it is an addition to an existing language, it can be appended to it either from a *.parquet or *.tsv using the script `append_to_openlid_parquet.py`.
 If the data are for a new language, just convert to a parquet.
 
 2. Data for all languages must be in the same directory.
@@ -29,7 +29,7 @@ If the output of stage 2 from `make_training_openlid.py`, named openlid_stage2_p
 the command to run preprocessing will be:
 
 ```commandline
-python3 make_training_openlid.py <output_dir> --skip_clean --skip_sort --data_dir <data_dir>
+python3 make_training_openlid.py <output_dir> --skip_clean --skip_sort
 ```
 
 5. The training on LUMI is run by `lid.sh`. Also beware of the hardcoded paths in the python script! (I hope to fix it today). The hyperparameters are the same as in OpenLID.
