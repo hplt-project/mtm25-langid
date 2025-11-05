@@ -24,8 +24,9 @@ if __name__ == '__main__':
     args.in_folder = os.path.expanduser(args.in_folder)
     args.out_folder = os.path.expanduser(args.out_folder)
     os.makedirs(args.out_folder, exist_ok=True)
+    langs = args.labels_to_replace.split(',')
     with open(f'{args.in_folder}/{args.file}', 'r') as fin, open(f'{args.out_folder}/{args.file}', 'w') as fout:
         for line in tqdm(fin):
-            for lang in ','.split(args.labels_to_replace):
+            for lang in langs:
                 line = replace_label(line, lang, args.replace_with)
             fout.write(line)
