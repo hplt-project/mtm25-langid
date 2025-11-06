@@ -1,0 +1,8 @@
+acm_Arab
+acq_Arab
+aeb_Arab
+apc_Arab
+arb_Arab
+ars_Arab
+ary_Arab
+arz_Arab
