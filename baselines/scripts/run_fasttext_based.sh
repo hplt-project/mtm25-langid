@@ -16,6 +16,14 @@ elif [ "$MODEL" = "retrained" ]; then
     ARGS="--model retrained --model-path /scratch/project_465002259/OpenLID-v2/model.bin --enable-preprocessing"
 elif [ "$MODEL" = "retrained-repl" ]; then
     ARGS="--model retrained --model-path /scratch/project_465002259/OpenLID-v2/rep-model.bin --enable-preprocessing"
+elif [ "$MODEL" = "specific-sca" ] ; then
+    ARGS="--model retrained --model-path /scratch/project_465002259/eurolid/cascade-data/sca/model.bin --enable-preprocessing"
+elif [ "$MODEL" = "specific-hsb" ] ; then
+    ARGS="--model retrained --model-path /scratch/project_465002259/eurolid/cascade-data/hsb/model.bin --enable-preprocessing"
+elif [ "$MODEL" = "specific-fas" ] ; then
+    ARGS="--model retrained --model-path /scratch/project_465002259/eurolid/cascade-data/fas/model.bin --enable-preprocessing"
+elif [ "$MODEL" = "specific-ara" ] ; then
+    ARGS="--model retrained --model-path /scratch/project_465002259/eurolid/cascade-data/ara/model.bin --enable-preprocessing"
 else
     ARGS="--model $MODEL"
 fi

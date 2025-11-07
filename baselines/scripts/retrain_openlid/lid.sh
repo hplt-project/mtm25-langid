@@ -12,10 +12,11 @@
 set -o errexit  # Exit the script on any error
 set -o nounset  # Treat any unset variables as an error
 
-# Load modules
-source ${HOME}/.bashrc
-export EBU_USER_PREFIX=/projappl/project_465001925/software/
-# the important bit: unload all current modules (just in case) and load only the necessary ones
+
+export EBU_USER_PREFIX=/projappl/project_465002310/software
+
 module --quiet purge
-module load LUMI PyTorch/2.2.2-rocm-5.6.1-python-3.10-vllm-0.4.0.post1-singularity-20240617
+module load LUMI
+module load PyTorch/2.6.0-rocm-6.2.4-python-3.12-singularity-20250404
+
 srun singularity exec $SIF python3 lid.py  ${@}

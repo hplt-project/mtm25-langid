@@ -1,0 +1,6 @@
+dan_Latn
+nob_Latn
+nno_Latn
+swe_Latn
+isl_Latn
+fao_Latn
