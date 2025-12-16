@@ -26,3 +26,15 @@ def load_udhr_data():
 
     print(f"Loaded {len(data)} examples", file=sys.stderr)
     return data
+
+
+def load_hplt_data():
+    print("Loading HPLT test data...", file=sys.stderr)
+    data = []
+
+    with open("data/hplt/test.jsonl", "r", encoding="utf-8") as f:
+        for line in f:
+            data.append(json.loads(line.strip()))
+
+    print(f"Loaded {len(data)} examples", file=sys.stderr)
+    return data

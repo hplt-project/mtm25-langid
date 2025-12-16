@@ -4,10 +4,10 @@ import json
 import fasttext
 import argparse
 import sys
-import jsonlines
+
 import regex
 from huggingface_hub import hf_hub_download
-from eval_datasets import load_flores_data, load_udhr_data
+from eval_datasets import load_flores_data, load_udhr_data, load_hplt_data
 from glotlid_customlid import CustomLID
 
 # Regex patterns for text preprocessing
@@ -15,6 +15,7 @@ from glotlid_customlid import CustomLID
 NONWORD_REPLACE_STR = r"[^\p{Word}\p{Zs}]|\d"  # either (not a word nor a space) or (is digit)
 NONWORD_REPLACE_PATTERN = regex.compile(NONWORD_REPLACE_STR)
 SPACE_PATTERN = regex.compile(r"\s\s+")  # squeezes sequential whitespace
+
 
 def get_model_info(model_name):
     models = {
@@ -75,10 +76,13 @@ def predict_languages(dataset, model_name, split=None, languages_file=None, pred
         data = load_flores_data(split)
     elif dataset == "udhr":
         data = load_udhr_data()
+    elif dataset == "hplt":
+        data = load_hplt_data()
     else:
-        raise ValueError(f"Unknown dataset: {dataset}. Available datasets: flores, udhr")
+        raise ValueError(f"Unknown dataset: {dataset}. Available datasets: flores, udhr, hplt")
 
     print(f"Processing {len(data)} examples...", file=sys.stderr)
+    results = []
 
     for i, example in enumerate(data):
         if i % 10000 == 0:
@@ -86,7 +90,7 @@ def predict_languages(dataset, model_name, split=None, languages_file=None, pred
 
         if dataset == "flores":
             text_content = example["text"]
-        elif dataset == "udhr":
+        elif dataset in {"udhr", "hplt"}:
             text_content = example["sentence"]
 
         if not enable_preprocessing and model_name in ["openlid", "openlid-v2", "retrained"]:
@@ -102,17 +106,30 @@ def predict_languages(dataset, model_name, split=None, languages_file=None, pred
             pred = pred_labels[0]
             pred_lang = pred.replace("__label__", "")
         else:
-            pred = model.predict(text_content)[0][0]
-            pred_lang = pred.replace("__label__", "")
+            pred, pred_probs = model.predict(text_content, k=1)
+            if (pred_probs[0] > 0.5) or (args.model == "glotlid"):
+                pred_lang = pred[0].replace("__label__", "")
+            else:
+                pred_lang = 'zxx_Zxxx'
+        result = example.copy()
+        if "predictions" not in result:
+            result["predictions"] = {}
+        result["predictions"][model_name] = pred_lang
+        results.append(result)
+        if not args.out_path:
+            print(pred_lang)
 
-        print(pred_lang)
+    print(f"Completed processing {len(results)} examples", file=sys.stderr)
 
-    print(f"Done", file=sys.stderr)
+    if args.out_path:
+        with open(args.out_path, 'w') as writer:
+            for result in results:
+                writer.write(json.dumps(result)+'\n')
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run fastText-based language identification predictions")
-    parser.add_argument("--dataset", choices=["flores", "udhr"], required=True,
+    parser.add_argument("--dataset", choices=["flores", "udhr", "hplt"], required=True,
                        help="Dataset to process (flores or udhr)")
     parser.add_argument("--model", choices=["glotlid", "openlid", "openlid-v2", "retrained"], required=True,
                        help="Model to use (glotlid, openlid, openlid-v2, or retrained)")
@@ -126,7 +143,7 @@ if __name__ == "__main__":
                        help="Enable text preprocessing (lowercase, normalize spaces, remove non-word characters)")
     parser.add_argument("--model-path", type=str,
                        help="Path to local model file (required for retrained model)")
-
+    parser.add_argument("--out_path", type=str, default="")
     args = parser.parse_args()
 
     if args.dataset == "flores" and args.split is None:
