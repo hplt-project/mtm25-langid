@@ -9,7 +9,6 @@ glg_Latn
 hrv_Latn
 mkd_Cyrl
 mlt_Latn
-nno_Latn
 nob_Latn
 ron_Latn
 slk_Latn
