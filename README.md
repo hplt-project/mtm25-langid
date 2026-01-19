@@ -49,3 +49,8 @@ for Scandinavian etc., if there are some other sources, check their quality and 
 We also collected licenses of the sources we used [here](https://docs.google.com/spreadsheets/d/162EzUGXDllmujoNG5s_XngSlL4awOJ9F79t5k2OM_FQ/edit?gid=737547198#gid=737547198) at LangID sources sheet.
 
 That script also ensures that wikipedia GlotLID data do not intersect with OpenLID wikipedia data.
+
+---------------------------------------------------------------------------------------------
+
+<sub><sup>This project has received funding from the European Union’s Horizon Europe research and innovation programme under grant agreement No 101070350 and from UK Research and Innovation (UKRI) under the UK government’s Horizon Europe funding guarantee [grant number 10052546].
+The contents of this publication are the sole responsibility of the HPLT consortium and do not necessarily reflect the opinion of the European Union.</sup></sub>
